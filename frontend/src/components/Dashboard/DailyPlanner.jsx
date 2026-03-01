@@ -18,19 +18,23 @@ function playAlarm() {
         if (!AudioCtx) return;
         const ctx = new AudioCtx();
         const now = ctx.currentTime;
-        [0, 0.25, 0.5].forEach((offset) => {
+        // Balandroq va uzoqroq signal: ~2.4 soniya
+        [0, 0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.1].forEach((offset, i) => {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             osc.type = 'sine';
-            osc.frequency.value = 880;
+            osc.frequency.value = i % 2 === 0 ? 920 : 760;
             gain.gain.value = 0.0001;
-            gain.gain.exponentialRampToValueAtTime(0.2, now + offset + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
+            gain.gain.exponentialRampToValueAtTime(0.45, now + offset + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.25);
             osc.connect(gain);
             gain.connect(ctx.destination);
             osc.start(now + offset);
-            osc.stop(now + offset + 0.2);
+            osc.stop(now + offset + 0.28);
         });
+        setTimeout(() => {
+            try { ctx.close(); } catch (_) {}
+        }, 2800);
     } catch (e) {
         console.error("Budilnik ovozida xato", e);
     }

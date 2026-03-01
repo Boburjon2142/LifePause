@@ -5,6 +5,16 @@
 @layer base {
   body {
     @apply bg-slate-900 text-slate-100 antialiased selection:bg-emerald-500 selection:text-white;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  input,
+  textarea,
+  select,
+  [contenteditable="true"] {
+    user-select: text;
+    -webkit-user-select: text;
   }
 }
 

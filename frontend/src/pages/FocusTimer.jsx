@@ -4,6 +4,7 @@ import api from '../services/api';
 
 const TICK_SECONDS = 1;
 const AUTO_SAVE_EVERY_SECONDS = 30;
+const BREAK_INTERVAL_SECONDS = 20 * 60;
 
 function formatTime(totalSeconds) {
   const safe = Math.max(0, totalSeconds);
@@ -28,6 +29,18 @@ export default function FocusTimer() {
   const [focus, setFocus] = useState(3);
   const [stress, setStress] = useState(3);
   const [savingLog, setSavingLog] = useState(false);
+  const [breakModalOpen, setBreakModalOpen] = useState(false);
+  const [breakConfirmed, setBreakConfirmed] = useState(false);
+  const [breakCheckpoint, setBreakCheckpoint] = useState(0);
+
+  const speakBreakReminder = () => {
+    if (!window.speechSynthesis) return;
+    const utter = new SpeechSynthesisUtterance("Qisqa tanaffus qiling");
+    utter.lang = "uz-UZ";
+    utter.rate = 0.95;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -36,6 +49,7 @@ export default function FocusTimer() {
         if (mounted) {
           setPlan(res.data);
           setSavedBaseSeconds(res.data.focus_seconds || 0);
+          setBreakCheckpoint(Math.floor((res.data.focus_seconds || 0) / BREAK_INTERVAL_SECONDS));
         }
       })
       .catch(() => {
@@ -71,6 +85,18 @@ export default function FocusTimer() {
 
   const totalSeconds = useMemo(() => savedBaseSeconds + sessionSeconds, [savedBaseSeconds, sessionSeconds]);
   const timeParts = useMemo(() => formatTime(totalSeconds).split(':'), [totalSeconds]);
+
+  useEffect(() => {
+    if (!running || breakModalOpen) return;
+    const currentCheckpoint = Math.floor(totalSeconds / BREAK_INTERVAL_SECONDS);
+    if (currentCheckpoint > breakCheckpoint) {
+      setRunning(false);
+      setBreakModalOpen(true);
+      setBreakConfirmed(false);
+      setBreakCheckpoint(currentCheckpoint);
+      speakBreakReminder();
+    }
+  }, [totalSeconds, running, breakModalOpen, breakCheckpoint]);
 
   const saveSession = async ({ stopAfterSave = true, silent = false } = {}) => {
     if (!plan || sessionSeconds <= 0 || saving) {
@@ -181,6 +207,9 @@ export default function FocusTimer() {
           <p className={`mt-1 text-xs ${running ? "text-emerald-400" : "text-amber-300"}`}>
             {running ? "Taymer ishlayapti" : "Taymer to'xtatilgan"}
           </p>
+          <p className="text-slate-500 text-xs mt-1">
+            Har 20 daqiqada qisqa tanaffus eslatmasi chiqadi.
+          </p>
         </div>
 
         <div className="glass rounded-2xl p-6">
@@ -243,6 +272,50 @@ export default function FocusTimer() {
         </div>
       </div>
       </div>
+
+      {breakModalOpen && (
+        <div
+          className="fixed inset-0 z-[70] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => {}}
+        >
+          <div className="w-full max-w-xl rounded-2xl border border-white/20 bg-slate-900 p-6">
+            <h3 className="text-2xl font-bold text-white">Qisqa tanaffus qiling</h3>
+            <p className="text-slate-300 mt-2">
+              20 daqiqa diqqat ishladingiz. 1-2 daqiqa jismoniy mashq qiling va davom eting.
+            </p>
+
+            <div className="mt-4 space-y-2 text-slate-200">
+              <p>1. Bo'yin va yelkani aylantiring (30 soniya)</p>
+              <p>2. O'rningizdan turib cho'ziling (30 soniya)</p>
+              <p>3. 10 marotaba chuqur nafas oling</p>
+            </div>
+
+            <label className="mt-5 flex items-center gap-3 text-slate-200">
+              <input
+                type="checkbox"
+                checked={breakConfirmed}
+                onChange={(e) => setBreakConfirmed(e.target.checked)}
+                className="w-5 h-5 rounded accent-emerald-500"
+              />
+              Mashqlarni bajardim, davom etaman
+            </label>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                disabled={!breakConfirmed}
+                onClick={() => {
+                  setBreakModalOpen(false);
+                  setRunning(true);
+                }}
+                className="px-5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-semibold"
+              >
+                Davom etish
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
