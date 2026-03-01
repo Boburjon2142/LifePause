@@ -6,14 +6,77 @@ function formatMinutes(seconds) {
     return Math.round((seconds || 0) / 60);
 }
 
+function formatTimeLabel(isoDateTime) {
+    if (!isoDateTime) return '--:--';
+    const date = new Date(isoDateTime);
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function playAlarm() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        [0, 0.25, 0.5].forEach((offset) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 880;
+            gain.gain.value = 0.0001;
+            gain.gain.exponentialRampToValueAtTime(0.2, now + offset + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + offset);
+            osc.stop(now + offset + 0.2);
+        });
+    } catch (e) {
+        console.error("Budilnik ovozida xato", e);
+    }
+}
+
 export default function DailyPlanner() {
     const navigate = useNavigate();
     const [plans, setPlans] = useState([]);
     const [newTitle, setNewTitle] = useState('');
+    const [startAt, setStartAt] = useState(() => {
+        const now = new Date();
+        return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    });
+    const [alarmEnabled, setAlarmEnabled] = useState(false);
+    const [alarmMessage, setAlarmMessage] = useState('');
 
     useEffect(() => {
         fetchPlans();
     }, []);
+
+    useEffect(() => {
+        if (!alarmEnabled) return;
+        const interval = setInterval(() => {
+            const now = new Date();
+            const alerted = JSON.parse(localStorage.getItem('triggered_plan_alarms') || '{}');
+            let changed = false;
+
+            for (const plan of plans) {
+                if (plan.completed || alerted[plan.id]) continue;
+                const planStart = new Date(plan.start_time);
+                const diff = now.getTime() - planStart.getTime();
+                if (diff >= 0 && diff < 60 * 1000) {
+                    playAlarm();
+                    setAlarmMessage(`Budilnik: "${plan.title}" vaqti keldi (${formatTimeLabel(plan.start_time)})`);
+                    alerted[plan.id] = true;
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                localStorage.setItem('triggered_plan_alarms', JSON.stringify(alerted));
+            }
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [plans, alarmEnabled]);
 
     const fetchPlans = async () => {
         try {
@@ -29,7 +92,9 @@ export default function DailyPlanner() {
         if (!newTitle.trim()) return;
 
         try {
+            const [h, m] = startAt.split(':').map(Number);
             const start = new Date();
+            start.setHours(h || 0, m || 0, 0, 0);
             const end = new Date(start.getTime() + 60 * 60 * 1000);
 
             const res = await api.post('planning/plans/', {
@@ -65,6 +130,13 @@ export default function DailyPlanner() {
                     placeholder="Bugun nima qilish kerak?"
                     className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                 />
+                <input
+                    type="time"
+                    value={startAt}
+                    onChange={e => setStartAt(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    title="Boshlanish vaqti"
+                />
                 <button
                     type="submit"
                     className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
@@ -72,6 +144,20 @@ export default function DailyPlanner() {
                     Qo'shish
                 </button>
             </form>
+
+            <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                <p className="text-sm text-slate-300">Reja vaqti kelganda budilnik ovozi chiqsin</p>
+                <button
+                    type="button"
+                    onClick={() => setAlarmEnabled((v) => !v)}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold ${alarmEnabled ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-200'}`}
+                >
+                    {alarmEnabled ? "Budilnik yoqilgan" : "Budilnikni yoqish"}
+                </button>
+            </div>
+            {alarmMessage && (
+                <p className="text-emerald-300 text-sm">{alarmMessage}</p>
+            )}
 
             <div className="space-y-2 mt-6">
                 {plans.length === 0 ? (
@@ -100,6 +186,9 @@ export default function DailyPlanner() {
                                 </button>
                                 <span className={`flex-1 font-medium ${plan.completed ? 'line-through opacity-70' : ''}`}>
                                     {plan.title}
+                                </span>
+                                <span className="text-sm text-slate-400 min-w-[50px]">
+                                    {formatTimeLabel(plan.start_time)}
                                 </span>
                                 <span className="text-sm text-slate-400">
                                     {formatMinutes(plan.focus_seconds)} daq

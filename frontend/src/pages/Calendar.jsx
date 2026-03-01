@@ -22,6 +22,9 @@ function colorByProductivity(score) {
 
 export default function Calendar() {
   const [progressData, setProgressData] = useState([]);
+  const [resultsData, setResultsData] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(() => isoDate(new Date()));
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeMonth, setActiveMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -30,6 +33,9 @@ export default function Calendar() {
   useEffect(() => {
     api.get("analytics/progress/?days=366")
       .then((res) => setProgressData(res.data || []))
+      .catch(console.error);
+    api.get("analytics/results/?days=366")
+      .then((res) => setResultsData(res.data || []))
       .catch(console.error);
   }, []);
 
@@ -63,6 +69,28 @@ export default function Calendar() {
     }
     return cells;
   }, [activeMonth, progressByDate]);
+
+  const resultsByDate = useMemo(() => {
+    const map = {};
+    for (const day of resultsData) {
+      map[day.date] = day;
+    }
+    return map;
+  }, [resultsData]);
+
+  const selectedDay = resultsByDate[selectedDate] || null;
+  const completedTasks = (selectedDay?.tasks || []).filter((task) => task.completed);
+
+  useEffect(() => {
+    if (!isModalOpen) return undefined;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isModalOpen]);
 
   return (
     <div className="space-y-6">
@@ -111,8 +139,12 @@ export default function Calendar() {
             return (
               <div
                 key={cell.key}
-                className="h-20 rounded-lg border border-white/10 p-2 text-white"
+                className={`h-20 rounded-lg border p-2 text-white cursor-pointer transition-all ${selectedDate === cell.key ? "border-emerald-300 ring-2 ring-emerald-400/50" : "border-white/10 hover:border-white/30"}`}
                 style={{ backgroundColor: bg }}
+                onClick={() => {
+                  setSelectedDate(cell.key);
+                  setIsModalOpen(true);
+                }}
                 title={cell.data
                   ? `${cell.key}: ${score}% (${cell.data.completed_plans}/${cell.data.total_plans})`
                   : `${cell.key}: ma'lumot yo'q`}
@@ -129,6 +161,47 @@ export default function Calendar() {
           })}
         </div>
       </div>
+
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 z-[60] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            className="w-full max-w-3xl glass rounded-2xl p-6 border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-semibold text-white">{selectedDate} kuni bajarilgan ishlar</h3>
+                <p className="text-slate-400 text-sm mt-1">
+                  Shu sana bo'yicha yakunlangan vazifalar ro'yxati.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200"
+              >
+                Yopish
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-2 max-h-[50vh] overflow-auto pr-1">
+              {completedTasks.length === 0 ? (
+                <p className="text-slate-500">Bu kunda bajarilgan vazifalar topilmadi.</p>
+              ) : (
+                completedTasks.map((task) => (
+                  <div key={task.id} className="bg-white/5 border border-white/10 rounded-lg p-3 flex items-center justify-between">
+                    <span className="text-slate-100">{task.title}</span>
+                    <span className="text-emerald-300 text-sm">{task.focus_minutes} daq</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

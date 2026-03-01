@@ -31,7 +31,7 @@ export default function Navbar() {
                         {isAuthenticated ? (
                             <>
                                 <Link to="/calendar" className="text-slate-300 hover:text-white transition-colors">Kalendar</Link>
-                                <Link to="/dashboard#planner" className="text-slate-300 hover:text-white transition-colors">Rejalar</Link>
+                                <Link to="/recurring-plans" className="text-slate-300 hover:text-white transition-colors">Kunlik rejalar</Link>
                                 <Link to="/dashboard#results" className="text-slate-300 hover:text-white transition-colors">Natijalar</Link>
                             </>
                         ) : (
