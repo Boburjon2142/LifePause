@@ -94,7 +94,7 @@ export default function Calendar() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center justify-between gap-4">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-white">Kalendar</h1>
           <p className="text-slate-400">Kunlar ranggi bajarilgan rejalarga qarab saqlanadi: qizildan yashilgacha.</p>
@@ -117,48 +117,52 @@ export default function Calendar() {
         </div>
       </header>
 
-      <div className="glass rounded-2xl p-6">
+      <div className="glass rounded-2xl p-4 sm:p-6">
         <h2 className="text-xl font-semibold text-white mb-4">
           {MONTHS[activeMonth.getMonth()]} {activeMonth.getFullYear()}
         </h2>
 
-        <div className="grid grid-cols-7 gap-2 mb-2">
-          {WEEK_DAYS.map((d) => (
-            <div key={d} className="text-xs uppercase tracking-wide text-slate-400 text-center py-2">{d}</div>
-          ))}
-        </div>
+        <div className="overflow-x-auto">
+          <div className="min-w-[680px]">
+            <div className="grid grid-cols-7 gap-2 mb-2">
+              {WEEK_DAYS.map((d) => (
+                <div key={d} className="text-xs uppercase tracking-wide text-slate-400 text-center py-2">{d}</div>
+              ))}
+            </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {monthCells.map((cell, idx) => {
-            if (!cell) {
-              return <div key={`empty-${idx}`} className="h-20 rounded-lg bg-white/0" />;
-            }
-            const score = cell.data?.productivity_score ?? 0;
-            const bg = cell.data ? colorByProductivity(score) : "rgba(255,255,255,0.04)";
+            <div className="grid grid-cols-7 gap-2">
+              {monthCells.map((cell, idx) => {
+                if (!cell) {
+                  return <div key={`empty-${idx}`} className="h-20 rounded-lg bg-white/0" />;
+                }
+                const score = cell.data?.productivity_score ?? 0;
+                const bg = cell.data ? colorByProductivity(score) : "rgba(255,255,255,0.04)";
 
-            return (
-              <div
-                key={cell.key}
-                className={`h-20 rounded-lg border p-2 text-white cursor-pointer transition-all ${selectedDate === cell.key ? "border-emerald-300 ring-2 ring-emerald-400/50" : "border-white/10 hover:border-white/30"}`}
-                style={{ backgroundColor: bg }}
-                onClick={() => {
-                  setSelectedDate(cell.key);
-                  setIsModalOpen(true);
-                }}
-                title={cell.data
-                  ? `${cell.key}: ${score}% (${cell.data.completed_plans}/${cell.data.total_plans})`
-                  : `${cell.key}: ma'lumot yo'q`}
-              >
-                <div className="text-sm font-semibold">{cell.date.getDate()}</div>
-                <div className="text-[11px] opacity-90 mt-1">
-                  {cell.data ? `${cell.data.completed_plans}/${cell.data.total_plans}` : "-"}
-                </div>
-                <div className="text-[11px] opacity-90">
-                  {cell.data ? `${score}%` : ""}
-                </div>
-              </div>
-            );
-          })}
+                return (
+                  <div
+                    key={cell.key}
+                    className={`h-20 rounded-lg border p-2 text-white cursor-pointer transition-all ${selectedDate === cell.key ? "border-emerald-300 ring-2 ring-emerald-400/50" : "border-white/10 hover:border-white/30"}`}
+                    style={{ backgroundColor: bg }}
+                    onClick={() => {
+                      setSelectedDate(cell.key);
+                      setIsModalOpen(true);
+                    }}
+                    title={cell.data
+                      ? `${cell.key}: ${score}% (${cell.data.completed_plans}/${cell.data.total_plans})`
+                      : `${cell.key}: ma'lumot yo'q`}
+                  >
+                    <div className="text-sm font-semibold">{cell.date.getDate()}</div>
+                    <div className="text-[11px] opacity-90 mt-1">
+                      {cell.data ? `${cell.data.completed_plans}/${cell.data.total_plans}` : "-"}
+                    </div>
+                    <div className="text-[11px] opacity-90">
+                      {cell.data ? `${score}%` : ""}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 

@@ -90,7 +90,7 @@ export default function Results() {
                                     <span className="text-white font-semibold">{day.date}</span>
                                     <span className="text-emerald-300 text-sm">{day.completed_plans}/{day.total_plans} bajarildi</span>
                                   </div>
-                                  <div className="grid grid-cols-2 gap-2 text-sm">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                                     <p className="text-slate-300">Diqqat: <span className="text-white">{day.focus_minutes} daq</span></p>
                                     <p className="text-slate-300">Energiya: <span className="text-white">{day.average_energy}</span></p>
                                     <p className="text-slate-300">Diqqat darajasi: <span className="text-white">{day.average_focus}</span></p>

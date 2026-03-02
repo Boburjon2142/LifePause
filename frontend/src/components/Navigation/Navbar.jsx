@@ -5,45 +5,52 @@ export default function Navbar() {
     const location = useLocation();
     const navigate = useNavigate();
     const [isAuthenticated, setIsAuthenticated] = useState(Boolean(localStorage.getItem('access_token')));
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     useEffect(() => {
         setIsAuthenticated(Boolean(localStorage.getItem('access_token')));
+        setMobileOpen(false);
     }, [location.pathname]);
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         setIsAuthenticated(false);
+        setMobileOpen(false);
         navigate('/');
     };
+
+    const mainLinks = isAuthenticated
+        ? [
+            { to: '/calendar', label: 'Kalendar' },
+            { to: '/recurring-plans', label: 'Takrorlanuvchi rejalar' },
+            { to: '/results', label: 'Natijalar' },
+        ]
+        : [
+            { to: '/features', label: 'Imkoniyatlar' },
+            { to: '/ai', label: 'SI' },
+            { to: '/pricing', label: 'Narxlar' },
+        ];
 
     return (
         <nav className="sticky top-0 z-50 glass">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center h-16">
+                <div className="flex justify-between items-center h-16 gap-3">
                     <div className="flex-shrink-0 flex items-center">
                         <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-200 select-none cursor-default">
                             LIFEPAUSE
                         </span>
                     </div>
 
-                    <div className="hidden sm:ml-6 sm:flex sm:items-center space-x-6">
-                        {isAuthenticated ? (
-                            <>
-                                <Link to="/calendar" className="text-slate-300 hover:text-white transition-colors">Kalendar</Link>
-                                <Link to="/recurring-plans" className="text-slate-300 hover:text-white transition-colors">Takrorlanuvchi rejalar</Link>
-                                <Link to="/results" className="text-slate-300 hover:text-white transition-colors">Natijalar</Link>
-                            </>
-                        ) : (
-                            <>
-                                <Link to="/features" className="text-slate-300 hover:text-white transition-colors">Imkoniyatlar</Link>
-                                <Link to="/ai" className="text-slate-300 hover:text-white transition-colors">SI</Link>
-                                <Link to="/pricing" className="text-slate-300 hover:text-white transition-colors">Narxlar</Link>
-                            </>
-                        )}
+                    <div className="hidden md:flex md:items-center space-x-6">
+                        {mainLinks.map((item) => (
+                            <Link key={item.to} to={item.to} className="text-slate-300 hover:text-white transition-colors">
+                                {item.label}
+                            </Link>
+                        ))}
                     </div>
 
-                    <div className="flex items-center space-x-4">
+                    <div className="hidden md:flex items-center space-x-4">
                         {isAuthenticated ? (
                             <>
                                 <span className="hidden md:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-semibold">
@@ -70,7 +77,61 @@ export default function Navbar() {
                             </>
                         )}
                     </div>
+
+                    <button
+                        type="button"
+                        onClick={() => setMobileOpen((prev) => !prev)}
+                        className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-white/20 text-slate-200 hover:bg-white/10"
+                        aria-label="Menyu"
+                    >
+                        <span className="text-lg leading-none">{mobileOpen ? 'X' : '='}</span>
+                    </button>
                 </div>
+
+                {mobileOpen && (
+                    <div className="md:hidden pb-4 border-t border-white/10">
+                        <div className="pt-3 space-y-2">
+                            {mainLinks.map((item) => (
+                                <Link
+                                    key={item.to}
+                                    to={item.to}
+                                    className="block px-3 py-2 rounded-lg text-slate-200 hover:bg-white/10"
+                                >
+                                    {item.label}
+                                </Link>
+                            ))}
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+                            {isAuthenticated ? (
+                                <>
+                                    <Link
+                                        to="/dashboard"
+                                        className="block w-full text-center bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium"
+                                    >
+                                        Panelim
+                                    </Link>
+                                    <button
+                                        type="button"
+                                        onClick={handleLogout}
+                                        className="block w-full text-center text-slate-200 border border-white/20 hover:border-white/40 px-4 py-2 rounded-lg font-medium"
+                                    >
+                                        Chiqish
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <Link to="/login" className="block w-full text-center text-slate-200 border border-white/20 px-4 py-2 rounded-lg">
+                                        Kirish
+                                    </Link>
+                                    <Link to="/register" className="block w-full text-center bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium">
+                                        Boshlash
+                                    </Link>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </nav>
     );

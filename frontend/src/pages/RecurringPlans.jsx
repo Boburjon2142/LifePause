@@ -153,14 +153,14 @@ export default function RecurringPlans() {
             <p className="text-slate-500">Hali takrorlanuvchi reja yo'q.</p>
           ) : (
             recurringPlans.map((item) => (
-              <div key={item.id} className="flex items-center justify-between text-sm bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                <div className="text-slate-200">
+              <div key={item.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm bg-white/5 border border-white/10 rounded-lg px-3 py-2">
+                <div className="text-slate-200 min-w-0">
                   <span className="font-medium">{item.title}</span>
-                  <span className="text-slate-400 ml-2">
+                  <span className="text-slate-400 ml-2 break-words">
                     {item.start_time?.slice(0, 5)} | {item.duration_minutes} daq | {formatRepeatDays(item.repeat_days)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:justify-end">
                   <button
                     type="button"
                     onClick={() => toggleRecurring(item)}
