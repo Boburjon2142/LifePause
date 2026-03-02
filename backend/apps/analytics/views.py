@@ -43,6 +43,6 @@ class ResultsSummaryView(APIView):
 
     def get(self, request):
         days = int(request.query_params.get("days", 14))
-        days = min(max(days, 1), 60)
+        days = min(max(days, 1), 2000)
         data = get_results_summary(request.user, days=days)
         return Response(data)

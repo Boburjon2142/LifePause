@@ -10,6 +10,7 @@ import Features from './pages/Features';
 import AI from './pages/AI';
 import Pricing from './pages/Pricing';
 import RecurringPlans from './pages/RecurringPlans';
+import Results from './pages/Results';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="recurring-plans" element={<RecurringPlans />} />
+        <Route path="results" element={<Results />} />
         <Route path="features" element={<Features />} />
         <Route path="ai" element={<AI />} />
         <Route path="pricing" element={<Pricing />} />

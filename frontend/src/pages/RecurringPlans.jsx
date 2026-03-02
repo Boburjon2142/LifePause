@@ -1,11 +1,28 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
 
+const WEEK_DAYS = [
+  { value: 0, label: 'Dush' },
+  { value: 1, label: 'Sesh' },
+  { value: 2, label: 'Chor' },
+  { value: 3, label: 'Pay' },
+  { value: 4, label: 'Jum' },
+  { value: 5, label: 'Shan' },
+  { value: 6, label: 'Yak' },
+];
+
+function formatRepeatDays(days) {
+  if (!Array.isArray(days) || days.length === 0) return "Har kuni";
+  const map = Object.fromEntries(WEEK_DAYS.map((d) => [d.value, d.label]));
+  return [...days].sort((a, b) => a - b).map((d) => map[d] || d).join(', ');
+}
+
 export default function RecurringPlans() {
   const [recurringPlans, setRecurringPlans] = useState([]);
   const [recurringTitle, setRecurringTitle] = useState('');
   const [recurringTime, setRecurringTime] = useState('09:00');
   const [recurringDuration, setRecurringDuration] = useState(60);
+  const [repeatDays, setRepeatDays] = useState([]);
 
   useEffect(() => {
     fetchRecurringPlans();
@@ -29,13 +46,23 @@ export default function RecurringPlans() {
         title: recurringTitle,
         start_time: recurringTime,
         duration_minutes: Number(recurringDuration),
+        repeat_days: repeatDays,
         is_active: true,
       });
       setRecurringTitle('');
+      setRepeatDays([]);
       await fetchRecurringPlans();
     } catch (err) {
       console.error("Takrorlanuvchi reja qo'shishda xato", err);
     }
+  };
+
+  const toggleRepeatDay = (dayValue) => {
+    setRepeatDays((prev) => (
+      prev.includes(dayValue)
+        ? prev.filter((d) => d !== dayValue)
+        : [...prev, dayValue]
+    ));
   };
 
   const toggleRecurring = async (item) => {
@@ -46,6 +73,18 @@ export default function RecurringPlans() {
       setRecurringPlans(recurringPlans.map((p) => (p.id === item.id ? res.data : p)));
     } catch (err) {
       console.error("Takrorlanuvchi rejani yangilashda xato", err);
+    }
+  };
+
+  const deleteRecurring = async (item) => {
+    const ok = window.confirm(`"${item.title}" rejani doimiy o'chirmoqchimisiz?`);
+    if (!ok) return;
+
+    try {
+      await api.delete(`planning/recurring-plans/${item.id}/`);
+      setRecurringPlans(recurringPlans.filter((p) => p.id !== item.id));
+    } catch (err) {
+      console.error("Takrorlanuvchi rejani o'chirishda xato", err);
     }
   };
 
@@ -87,6 +126,28 @@ export default function RecurringPlans() {
           </div>
         </form>
 
+        <div className="mt-3">
+          <p className="text-xs text-slate-400 mb-2">Takrorlanish kunlari (bo'sh qoldirilsa har kuni):</p>
+          <div className="flex flex-wrap gap-2">
+            {WEEK_DAYS.map((day) => {
+              const active = repeatDays.includes(day.value);
+              return (
+                <button
+                  key={day.value}
+                  type="button"
+                  onClick={() => toggleRepeatDay(day.value)}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold border ${active
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                    : 'bg-white/5 text-slate-300 border-white/10'
+                    }`}
+                >
+                  {day.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <div className="mt-4 space-y-2">
           {recurringPlans.length === 0 ? (
             <p className="text-slate-500">Hali takrorlanuvchi reja yo'q.</p>
@@ -95,15 +156,26 @@ export default function RecurringPlans() {
               <div key={item.id} className="flex items-center justify-between text-sm bg-white/5 border border-white/10 rounded-lg px-3 py-2">
                 <div className="text-slate-200">
                   <span className="font-medium">{item.title}</span>
-                  <span className="text-slate-400 ml-2">{item.start_time?.slice(0, 5)} | {item.duration_minutes} daq</span>
+                  <span className="text-slate-400 ml-2">
+                    {item.start_time?.slice(0, 5)} | {item.duration_minutes} daq | {formatRepeatDays(item.repeat_days)}
+                  </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => toggleRecurring(item)}
-                  className={`px-3 py-1 rounded-md text-xs font-semibold ${item.is_active ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40" : "bg-slate-500/20 text-slate-300 border border-slate-400/30"}`}
-                >
-                  {item.is_active ? "Faol" : "Nofaol"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleRecurring(item)}
+                    className={`px-3 py-1 rounded-md text-xs font-semibold ${item.is_active ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/40" : "bg-slate-500/20 text-slate-300 border border-slate-400/30"}`}
+                  >
+                    {item.is_active ? "Faol" : "Nofaol"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteRecurring(item)}
+                    className="px-3 py-1 rounded-md text-xs font-semibold bg-red-500/20 text-red-300 border border-red-400/40 hover:bg-red-500/30"
+                  >
+                    O'chirish
+                  </button>
+                </div>
               </div>
             ))
           )}

@@ -13,6 +13,7 @@ export default function Dashboard() {
     const [aiRecommendation, setAiRecommendation] = useState(null);
     const [progressData, setProgressData] = useState([]);
     const [resultsData, setResultsData] = useState([]);
+    const latestThreeResults = resultsData.slice(0, 3);
 
     useEffect(() => {
         // Fetch evaluation
@@ -54,7 +55,7 @@ export default function Dashboard() {
                         <DailyPlanner />
                     </div>
                     <div id="results">
-                        <ResultsPanel results={resultsData} />
+                        <ResultsPanel results={latestThreeResults} />
                     </div>
                 </div>
             </div>

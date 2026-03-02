@@ -7,6 +7,7 @@ class RecurringPlan(models.Model):
     description = models.TextField(blank=True)
     start_time = models.TimeField()
     duration_minutes = models.PositiveIntegerField(default=60)
+    repeat_days = models.JSONField(default=list, blank=True)  # 0=Mon ... 6=Sun; [] => every day
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

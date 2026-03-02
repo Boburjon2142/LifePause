@@ -1,3 +1,12 @@
+function isPastDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const target = new Date(y, (m || 1) - 1, d || 1);
+  target.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return target < today;
+}
+
 export default function ResultsPanel({ results = [] }) {
   return (
     <div className="glass rounded-2xl p-6">
@@ -7,8 +16,16 @@ export default function ResultsPanel({ results = [] }) {
         <p className="text-slate-500">Kunlik natijalar hali shakllanmagan.</p>
       ) : (
         <div className="space-y-4 max-h-[420px] overflow-auto pr-1">
-          {results.map((day) => (
-            <div key={day.date} className="bg-white/5 border border-white/10 rounded-xl p-4">
+          {results.map((day) => {
+            const isPastDay = isPastDate(day.date);
+            return (
+            <div
+              key={day.date}
+              className={`rounded-xl p-4 border ${isPastDay && day.completed_plans < day.total_plans
+                ? 'bg-red-500/10 border-red-400/30'
+                : 'bg-white/5 border-white/10'
+                }`}
+            >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-white font-semibold">{day.date}</span>
                 <span className="text-emerald-300 text-sm">{day.completed_plans}/{day.total_plans} bajarildi</span>
@@ -23,13 +40,23 @@ export default function ResultsPanel({ results = [] }) {
               <div className="space-y-1">
                 {day.tasks.map((task) => (
                   <div key={task.id} className="flex items-center justify-between text-xs">
-                    <span className={task.completed ? 'text-emerald-300' : 'text-slate-300'}>{task.title}</span>
+                    <span
+                      className={
+                        task.completed
+                          ? 'text-emerald-300'
+                          : isPastDay
+                            ? 'text-red-300'
+                            : 'text-slate-300'
+                      }
+                    >
+                      {task.title}
+                    </span>
                     <span className="text-slate-400">{task.focus_minutes} daq</span>
                   </div>
                 ))}
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
     </div>
