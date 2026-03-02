@@ -126,35 +126,35 @@ export default function DailyPlanner() {
 
     return (
         <div className="space-y-4">
-            <form onSubmit={addPlan} className="flex gap-2">
+            <form onSubmit={addPlan} className="flex flex-col sm:flex-row gap-2">
                 <input
                     type="text"
                     value={newTitle}
                     onChange={e => setNewTitle(e.target.value)}
                     placeholder="Bugun nima qilish kerak?"
-                    className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    className="w-full sm:flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                 />
                 <input
                     type="time"
                     value={startAt}
                     onChange={e => setStartAt(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    className="w-full sm:w-auto bg-white/5 border border-white/10 rounded-xl px-3 py-3 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                     title="Boshlanish vaqti"
                 />
                 <button
                     type="submit"
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+                    className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
                 >
                     Qo'shish
                 </button>
             </form>
 
-            <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
                 <p className="text-sm text-slate-300">Reja vaqti kelganda budilnik ovozi chiqsin</p>
                 <button
                     type="button"
                     onClick={() => setAlarmEnabled((v) => !v)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold ${alarmEnabled ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-200'}`}
+                    className={`w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-semibold ${alarmEnabled ? 'bg-emerald-500 text-white' : 'bg-slate-700 text-slate-200'}`}
                 >
                     {alarmEnabled ? "Budilnik yoqilgan" : "Budilnikni yoqish"}
                 </button>
@@ -175,7 +175,7 @@ export default function DailyPlanner() {
                                     : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'
                                 }`}
                         >
-                            <div className="flex items-center gap-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                                 <button
                                     type="button"
                                     onClick={() => toggleComplete(plan)}
@@ -188,19 +188,23 @@ export default function DailyPlanner() {
                                         </svg>
                                     )}
                                 </button>
-                                <span className={`flex-1 font-medium ${plan.completed ? 'line-through opacity-70' : ''}`}>
-                                    {plan.title}
-                                </span>
-                                <span className="text-sm text-slate-400 min-w-[50px]">
-                                    {formatTimeLabel(plan.start_time)}
-                                </span>
-                                <span className="text-sm text-slate-400">
-                                    {formatMinutes(plan.focus_seconds)} daq
-                                </span>
+                                <div className="w-full min-w-0 sm:flex-1">
+                                    <span className={`block font-medium break-words ${plan.completed ? 'line-through opacity-70' : ''}`}>
+                                        {plan.title}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto">
+                                    <span className="text-sm text-slate-400">
+                                        {formatTimeLabel(plan.start_time)}
+                                    </span>
+                                    <span className="text-sm text-slate-400">
+                                        {formatMinutes(plan.focus_seconds)} daq
+                                    </span>
+                                </div>
                                 <button
                                     type="button"
                                     onClick={() => navigate(`/focus/${plan.id}`)}
-                                    className="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium"
+                                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium"
                                 >
                                     Diqqat Taymeri
                                 </button>
