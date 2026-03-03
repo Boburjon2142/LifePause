@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
+import { speakUz, startUzListening, supportsSpeechRecognition } from '../../utils/voice';
 
 function formatMinutes(seconds) {
     return Math.round((seconds || 0) / 60);
@@ -40,6 +41,31 @@ function playAlarm() {
     }
 }
 
+function parseTimeFromTitle(rawText) {
+    const text = (rawText || '').trim();
+    if (!text) return { cleanedTitle: '', parsedTime: null };
+
+    // Misollar: "soat 9:04", "soat 9.04", "soat 9 04", "soat 9"
+    const match = text.match(/\bsoat\s+(\d{1,2})(?:\s*[:.\- ]\s*(\d{1,2}))?/i);
+    if (!match) {
+        return { cleanedTitle: text, parsedTime: null };
+    }
+
+    const h = Number(match[1]);
+    const m = match[2] !== undefined ? Number(match[2]) : 0;
+    if (Number.isNaN(h) || Number.isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) {
+        return { cleanedTitle: text, parsedTime: null };
+    }
+
+    const parsedTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    const cleanedTitle = text
+        .replace(match[0], ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return { cleanedTitle, parsedTime };
+}
+
 export default function DailyPlanner() {
     const navigate = useNavigate();
     const [plans, setPlans] = useState([]);
@@ -50,9 +76,21 @@ export default function DailyPlanner() {
     });
     const [alarmEnabled, setAlarmEnabled] = useState(false);
     const [alarmMessage, setAlarmMessage] = useState('');
+    const [voiceListening, setVoiceListening] = useState(false);
+    const [voiceMessage, setVoiceMessage] = useState('');
 
     useEffect(() => {
         fetchPlans();
+    }, []);
+
+    useEffect(() => {
+        const pendingVoiceTitle = localStorage.getItem('lp_voice_plan_title');
+        if (!pendingVoiceTitle) return;
+        const { cleanedTitle, parsedTime } = parseTimeFromTitle(pendingVoiceTitle);
+        setNewTitle(cleanedTitle || pendingVoiceTitle);
+        if (parsedTime) setStartAt(parsedTime);
+        localStorage.removeItem('lp_voice_plan_title');
+        setVoiceMessage("Ovozdan reja matni joylandi.");
     }, []);
 
     useEffect(() => {
@@ -69,6 +107,7 @@ export default function DailyPlanner() {
                 if (diff >= 0 && diff < 60 * 1000) {
                     playAlarm();
                     setAlarmMessage(`Budilnik: "${plan.title}" vaqti keldi (${formatTimeLabel(plan.start_time)})`);
+                    speakUz(`Diqqat, ${plan.title} vaqti keldi`);
                     alerted[plan.id] = true;
                     changed = true;
                 }
@@ -93,16 +132,19 @@ export default function DailyPlanner() {
 
     const addPlan = async (e) => {
         e.preventDefault();
-        if (!newTitle.trim()) return;
+        const { cleanedTitle, parsedTime } = parseTimeFromTitle(newTitle);
+        const titleToSave = cleanedTitle.trim();
+        if (parsedTime) setStartAt(parsedTime);
+        if (!titleToSave) return;
 
         try {
-            const [h, m] = startAt.split(':').map(Number);
+            const [h, m] = (parsedTime || startAt).split(':').map(Number);
             const start = new Date();
             start.setHours(h || 0, m || 0, 0, 0);
             const end = new Date(start.getTime() + 60 * 60 * 1000);
 
             const res = await api.post('planning/plans/', {
-                title: newTitle,
+                title: titleToSave,
                 start_time: start.toISOString(),
                 end_time: end.toISOString(),
             });
@@ -124,6 +166,37 @@ export default function DailyPlanner() {
         }
     };
 
+    const startVoicePlanInput = () => {
+        if (!supportsSpeechRecognition()) {
+            setVoiceMessage("Brauzer mikrofondan matn olishni qo'llab-quvvatlamaydi.");
+            return;
+        }
+        startUzListening({
+            onStart: () => {
+                setVoiceListening(true);
+                setVoiceMessage("Reja nomini ayting...");
+            },
+            onText: (transcript) => {
+                setVoiceListening(false);
+                const { cleanedTitle, parsedTime } = parseTimeFromTitle(transcript);
+                setNewTitle(cleanedTitle || transcript);
+                if (parsedTime) {
+                    setStartAt(parsedTime);
+                    setVoiceMessage(`Matn olindi, vaqt ajratildi: ${parsedTime}`);
+                } else {
+                    setVoiceMessage(`Matn olindi: "${transcript}"`);
+                }
+            },
+            onError: () => {
+                setVoiceListening(false);
+                setVoiceMessage("Ovozli matnni tanib bo'lmadi.");
+            },
+            onEnd: () => {
+                setVoiceListening(false);
+            },
+        });
+    };
+
     return (
         <div className="space-y-4">
             <form onSubmit={addPlan} className="flex flex-col sm:flex-row gap-2">
@@ -142,12 +215,23 @@ export default function DailyPlanner() {
                     title="Boshlanish vaqti"
                 />
                 <button
+                    type="button"
+                    onClick={startVoicePlanInput}
+                    className={`w-full sm:w-auto px-4 py-3 rounded-xl border text-sm font-semibold ${voiceListening ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-300' : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10'}`}
+                    title="Mikrofon orqali reja nomi kiritish"
+                >
+                    {voiceListening ? "Tinglayapman..." : "Mic"}
+                </button>
+                <button
                     type="submit"
                     className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
                 >
                     Qo'shish
                 </button>
             </form>
+            {voiceMessage && (
+                <p className="text-xs text-slate-300">{voiceMessage}</p>
+            )}
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
                 <p className="text-sm text-slate-300">Reja vaqti kelganda budilnik ovozi chiqsin</p>
