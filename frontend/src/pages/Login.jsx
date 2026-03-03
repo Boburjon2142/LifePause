@@ -12,12 +12,28 @@ export default function Login() {
         e.preventDefault();
         setError(null);
         try {
-            const res = await api.post('auth/login/', { username, password });
+            const cleanUsername = username.trim();
+            const cleanPassword = password.trim();
+            const res = await api.post('auth/login/', { username: cleanUsername, password: cleanPassword });
             localStorage.setItem('access_token', res.data.access);
             localStorage.setItem('refresh_token', res.data.refresh);
             navigate('/dashboard');
         } catch (err) {
-            setError("Foydalanuvchi nomi yoki parol noto'g'ri");
+            if (!err.response) {
+                setError("Backend bilan ulanishda xato (CORS/URL). VITE_API_URL ni tekshiring.");
+                return;
+            }
+
+            if (err.response.status === 401) {
+                setError("Foydalanuvchi nomi yoki parol noto'g'ri.");
+                return;
+            }
+
+            const apiMessage =
+                err.response?.data?.detail ||
+                err.response?.data?.message ||
+                "Kirishda noma'lum xato yuz berdi.";
+            setError(String(apiMessage));
         }
     };
 
