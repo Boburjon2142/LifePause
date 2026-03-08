@@ -31,6 +31,8 @@ def ensure_daily_recurring_plans(user):
             user=user,
             title=recurring.title,
             description=recurring.description,
+            life_area=recurring.life_area,
+            sticker=recurring.sticker,
             start_time=start_dt,
             end_time=end_dt,
             recurring_source=recurring,

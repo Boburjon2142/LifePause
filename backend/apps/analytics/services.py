@@ -1,7 +1,15 @@
 from django.utils import timezone
 from datetime import timedelta
 from apps.planning.models import DailyPlan
-from .models import EnergyLog
+from .models import EnergyLog, MorningCheckIn, EveningReflection, FutureSelfGoal
+
+
+LIFE_AREA_META = {
+    "health": {"label": "Sog'liq", "icon": "💪", "color": "emerald"},
+    "learning": {"label": "O'rganish", "icon": "📚", "color": "cyan"},
+    "finance": {"label": "Moliya", "icon": "💸", "color": "amber"},
+    "personal": {"label": "Shaxsiy", "icon": "🧘", "color": "violet"},
+}
 
 def evaluate_day(user, date=None):
     if not date:
@@ -36,7 +44,8 @@ def evaluate_day(user, date=None):
         "burnout_risk": burnout_risk,
         "productivity_score": productivity_score,
         "total_plans": plans.count(),
-        "completed_plans": completed_plans
+        "completed_plans": completed_plans,
+        "life_areas": get_life_area_summary(user, date=date),
     }
 
 
@@ -100,6 +109,8 @@ def get_results_summary(user, days=14):
                         "title": plan.title,
                         "completed": plan.completed,
                         "focus_minutes": round(plan.focus_seconds / 60, 1),
+                        "life_area": plan.life_area,
+                        "sticker": plan.sticker,
                     }
                     for plan in plans
                 ],
@@ -107,3 +118,60 @@ def get_results_summary(user, days=14):
         )
 
     return results
+
+
+def get_life_area_summary(user, date=None):
+    target_date = date or timezone.localdate()
+    plans = DailyPlan.objects.filter(user=user, start_time__date=target_date)
+    summary = []
+
+    for area_key, meta in LIFE_AREA_META.items():
+        area_plans = plans.filter(life_area=area_key)
+        total = area_plans.count()
+        completed = area_plans.filter(completed=True).count()
+        focus_minutes = round(sum(plan.focus_seconds for plan in area_plans) / 60, 1) if total else 0
+        area_logs = EnergyLog.objects.filter(plan__in=area_plans)
+        average_energy = round(sum(log.energy for log in area_logs) / len(area_logs), 2) if area_logs else 0
+        summary.append({
+            "key": area_key,
+            **meta,
+            "total_plans": total,
+            "completed_plans": completed,
+            "focus_minutes": focus_minutes,
+            "average_energy": average_energy,
+            "completion_rate": int((completed / total) * 100) if total else 0,
+        })
+
+    return summary
+
+
+def get_growth_snapshot(user):
+    today = timezone.localdate()
+    morning = MorningCheckIn.objects.filter(user=user, date=today).first()
+    reflection = EveningReflection.objects.filter(user=user).first()
+    goals = list(FutureSelfGoal.objects.filter(user=user).values("horizon", "title", "description"))
+
+    prompts = [
+        "Bugun nimalar yaxshi ketdi?",
+        "Buguningizni mazmunli qilgan narsa nima bo'ldi?",
+        "Bugungi kichik yutug'ingiz nima edi?",
+        "Ertaga nimani yaxshiroq qilmoqchisiz?",
+    ]
+
+    return {
+        "morning_checkin": {
+            "exists": bool(morning),
+            "main_focus": morning.main_focus if morning else "",
+            "priority_habit": morning.priority_habit if morning else "",
+            "energy_level": morning.energy_level if morning else 3,
+        },
+        "latest_reflection": {
+            "exists": bool(reflection),
+            "date": reflection.date.isoformat() if reflection else None,
+            "prompt": reflection.prompt if reflection else prompts[today.day % len(prompts)],
+            "response": reflection.response if reflection else "",
+            "mood": reflection.mood if reflection else "",
+        },
+        "future_goals": goals,
+        "reflection_prompt": prompts[today.day % len(prompts)],
+    }
