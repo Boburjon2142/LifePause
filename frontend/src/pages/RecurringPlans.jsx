@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
+import { LIFE_AREAS, STICKERS } from '../constants/lifeAreas';
 
 const WEEK_DAYS = [
   { value: 0, label: 'Dush' },
@@ -23,6 +24,8 @@ export default function RecurringPlans() {
   const [recurringTime, setRecurringTime] = useState('09:00');
   const [recurringDuration, setRecurringDuration] = useState(60);
   const [repeatDays, setRepeatDays] = useState([]);
+  const [lifeArea, setLifeArea] = useState('personal');
+  const [sticker, setSticker] = useState('🧘');
 
   useEffect(() => {
     fetchRecurringPlans();
@@ -44,6 +47,8 @@ export default function RecurringPlans() {
     try {
       await api.post('planning/recurring-plans/', {
         title: recurringTitle,
+        life_area: lifeArea,
+        sticker,
         start_time: recurringTime,
         duration_minutes: Number(recurringDuration),
         repeat_days: repeatDays,
@@ -51,6 +56,8 @@ export default function RecurringPlans() {
       });
       setRecurringTitle('');
       setRepeatDays([]);
+      setLifeArea('personal');
+      setSticker('🧘');
       await fetchRecurringPlans();
     } catch (err) {
       console.error("Takrorlanuvchi reja qo'shishda xato", err);
@@ -126,6 +133,33 @@ export default function RecurringPlans() {
           </div>
         </form>
 
+        <div className="mt-3 flex flex-col lg:flex-row gap-3">
+          <div className="flex flex-wrap gap-2">
+            {LIFE_AREAS.map((area) => (
+              <button
+                key={area.value}
+                type="button"
+                onClick={() => setLifeArea(area.value)}
+                className={`px-3 py-1 rounded-md text-xs font-semibold border ${lifeArea === area.value ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40' : 'bg-white/5 text-slate-300 border-white/10'}`}
+              >
+                {area.icon} {area.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {STICKERS.map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setSticker(item)}
+                className={`w-9 h-9 rounded-lg border text-lg ${sticker === item ? 'bg-violet-500/20 border-violet-400/40' : 'bg-white/5 border-white/10'}`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="mt-3">
           <p className="text-xs text-slate-400 mb-2">Takrorlanish kunlari (bo'sh qoldirilsa har kuni):</p>
           <div className="flex flex-wrap gap-2">
@@ -155,9 +189,9 @@ export default function RecurringPlans() {
             recurringPlans.map((item) => (
               <div key={item.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm bg-white/5 border border-white/10 rounded-lg px-3 py-2">
                 <div className="text-slate-200 min-w-0">
-                  <span className="font-medium">{item.title}</span>
+                  <span className="font-medium">{item.sticker ? `${item.sticker} ` : ''}{item.title}</span>
                   <span className="text-slate-400 ml-2 break-words">
-                    {item.start_time?.slice(0, 5)} | {item.duration_minutes} daq | {formatRepeatDays(item.repeat_days)}
+                    {item.start_time?.slice(0, 5)} | {item.duration_minutes} daq | {formatRepeatDays(item.repeat_days)} | {item.life_area}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 sm:justify-end">

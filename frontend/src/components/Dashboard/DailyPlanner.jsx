@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import { speakUz, startUzListening, supportsSpeechRecognition } from '../../utils/voice';
+import { LIFE_AREAS, STICKERS } from '../../constants/lifeAreas';
 
 function formatMinutes(seconds) {
     return Math.round((seconds || 0) / 60);
@@ -78,6 +79,8 @@ export default function DailyPlanner() {
     const [alarmMessage, setAlarmMessage] = useState('');
     const [voiceListening, setVoiceListening] = useState(false);
     const [voiceMessage, setVoiceMessage] = useState('');
+    const [lifeArea, setLifeArea] = useState('personal');
+    const [sticker, setSticker] = useState('🧘');
 
     useEffect(() => {
         fetchPlans();
@@ -145,6 +148,8 @@ export default function DailyPlanner() {
 
             const res = await api.post('planning/plans/', {
                 title: titleToSave,
+                life_area: lifeArea,
+                sticker,
                 start_time: start.toISOString(),
                 end_time: end.toISOString(),
             });
@@ -229,6 +234,32 @@ export default function DailyPlanner() {
                     Qo'shish
                 </button>
             </form>
+            <div className="flex flex-col lg:flex-row gap-3">
+                <div className="flex flex-wrap gap-2">
+                    {LIFE_AREAS.map((area) => (
+                        <button
+                            key={area.value}
+                            type="button"
+                            onClick={() => setLifeArea(area.value)}
+                            className={`px-3 py-2 rounded-lg border text-sm ${lifeArea === area.value ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-300' : 'bg-white/5 border-white/10 text-slate-300'}`}
+                        >
+                            {area.icon} {area.label}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {STICKERS.map((item) => (
+                        <button
+                            key={item}
+                            type="button"
+                            onClick={() => setSticker(item)}
+                            className={`w-10 h-10 rounded-lg border text-lg ${sticker === item ? 'bg-violet-500/20 border-violet-400/40' : 'bg-white/5 border-white/10'}`}
+                        >
+                            {item}
+                        </button>
+                    ))}
+                </div>
+            </div>
             {voiceMessage && (
                 <p className="text-xs text-slate-300">{voiceMessage}</p>
             )}
@@ -274,8 +305,9 @@ export default function DailyPlanner() {
                                 </button>
                                 <div className="w-full min-w-0 sm:flex-1">
                                     <span className={`block font-medium break-words ${plan.completed ? 'line-through opacity-70' : ''}`}>
-                                        {plan.title}
+                                        {plan.sticker ? `${plan.sticker} ` : ''}{plan.title}
                                     </span>
+                                    <span className="text-xs text-slate-400 mt-1 capitalize">{plan.life_area}</span>
                                 </div>
                                 <div className="flex items-center justify-between sm:justify-start gap-4 w-full sm:w-auto">
                                     <span className="text-sm text-slate-400">

@@ -28,6 +28,8 @@ export default function Navbar() {
             { to: '/calendar', label: 'Kalendar' },
             { to: '/recurring-plans', label: 'Takrorlanuvchi rejalar' },
             { to: '/results', label: 'Natijalar' },
+            { to: '/reflections', label: 'Refleksiya' },
+            { to: '/goals', label: 'Maqsadlar' },
         ]
         : [
             { to: '/features', label: 'Imkoniyatlar' },
