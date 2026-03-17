@@ -1,6 +1,9 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
+from django.urls import re_path
+
+from core.views import FrontendAppView
 
 
 def api_root(_request):
@@ -22,4 +25,7 @@ urlpatterns = [
     path('api/planning/', include('apps.planning.urls')),
     path('api/analytics/', include('apps.analytics.urls')),
     path('api/ai/', include('apps.ai.urls')),
+    re_path(r'^(?!api/|admin/|static/).*$',
+            FrontendAppView.as_view(),
+            name='frontend'),
 ]
