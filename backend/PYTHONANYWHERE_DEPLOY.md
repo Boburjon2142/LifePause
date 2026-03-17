@@ -7,6 +7,7 @@ Bu loyiha endi `PythonAnywhere`da bitta Django app sifatida ishlaydi:
 - JS/CSS assetlar `/static/frontend_dist/` orqali serve qilinadi
 - API frontend bilan bir domen ostida `/api/` da ishlaydi
 - Local developmentda `DEBUG=True` default bo'ladi, PythonAnywhere'da esa env orqali `DEBUG=False` qo'ying
+- `PythonAnywhere` Python `3.11` ishlatgani uchun backend `Django 5.2.x` bilan deploy qilinadi
 
 ### 1. Serverda build qilish
 
