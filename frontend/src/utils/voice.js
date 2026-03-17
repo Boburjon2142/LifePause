@@ -3,6 +3,8 @@ function getRecognitionCtor() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
+const BREAK_ALERT_AUDIO_PATH = '/static/voice/ifepause%20alert.mp3';
+
 export function supportsSpeechRecognition() {
   return Boolean(getRecognitionCtor());
 }
@@ -14,6 +16,19 @@ export function speakUz(text) {
   utter.rate = 0.95;
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utter);
+}
+
+export async function playBreakAlert() {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    const audio = new Audio(BREAK_ALERT_AUDIO_PATH);
+    audio.preload = 'auto';
+    await audio.play();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function startUzListening({ onText, onError, onStart, onEnd } = {}) {
@@ -51,4 +66,3 @@ export function startUzListening({ onText, onError, onStart, onEnd } = {}) {
   recognition.start();
   return () => recognition.stop();
 }
-

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
+import { playBreakAlert, speakUz } from '../utils/voice';
 
 const TICK_SECONDS = 1;
 const AUTO_SAVE_EVERY_SECONDS = 30;
-const BREAK_INTERVAL_SECONDS = 20 * 60;
+const BREAK_INTERVAL_MINUTES = Number(import.meta.env.VITE_BREAK_INTERVAL_MINUTES || 20);
+const BREAK_INTERVAL_SECONDS = BREAK_INTERVAL_MINUTES * 60;
 
 function formatTime(totalSeconds) {
   const safe = Math.max(0, totalSeconds);
@@ -33,13 +35,11 @@ export default function FocusTimer() {
   const [breakConfirmed, setBreakConfirmed] = useState(false);
   const [breakCheckpoint, setBreakCheckpoint] = useState(0);
 
-  const speakBreakReminder = () => {
-    if (!window.speechSynthesis) return;
-    const utter = new SpeechSynthesisUtterance("Qisqa tanaffus qiling");
-    utter.lang = "uz-UZ";
-    utter.rate = 0.95;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+  const triggerBreakReminder = async () => {
+    const audioPlayed = await playBreakAlert();
+    if (!audioPlayed) {
+      speakUz("Qisqa tanaffus qiling");
+    }
   };
 
   useEffect(() => {
@@ -94,7 +94,7 @@ export default function FocusTimer() {
       setBreakModalOpen(true);
       setBreakConfirmed(false);
       setBreakCheckpoint(currentCheckpoint);
-      speakBreakReminder();
+      triggerBreakReminder();
     }
   }, [totalSeconds, running, breakModalOpen, breakCheckpoint]);
 
@@ -208,7 +208,7 @@ export default function FocusTimer() {
             {running ? "Taymer ishlayapti" : "Taymer to'xtatilgan"}
           </p>
           <p className="text-slate-500 text-xs mt-1">
-            Har 20 daqiqada qisqa tanaffus eslatmasi chiqadi.
+            Har {BREAK_INTERVAL_MINUTES} daqiqada qisqa tanaffus eslatmasi chiqadi.
           </p>
         </div>
 
@@ -281,7 +281,7 @@ export default function FocusTimer() {
           <div className="w-full max-w-xl rounded-2xl border border-white/20 bg-slate-900 p-6">
             <h3 className="text-2xl font-bold text-white">Qisqa tanaffus qiling</h3>
             <p className="text-slate-300 mt-2">
-              20 daqiqa diqqat ishladingiz. 1-2 daqiqa jismoniy mashq qiling va davom eting.
+              {BREAK_INTERVAL_MINUTES} daqiqa diqqat ishladingiz. 1-2 daqiqa jismoniy mashq qiling va davom eting.
             </p>
 
             <div className="mt-4 space-y-2 text-slate-200">
