@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
-import { playBreakAlert, speakUz } from '../utils/voice';
 
 const TICK_SECONDS = 1;
 const AUTO_SAVE_EVERY_SECONDS = 30;
@@ -34,13 +33,6 @@ export default function FocusTimer() {
   const [breakModalOpen, setBreakModalOpen] = useState(false);
   const [breakConfirmed, setBreakConfirmed] = useState(false);
   const [breakCheckpoint, setBreakCheckpoint] = useState(0);
-
-  const triggerBreakReminder = async () => {
-    const audioPlayed = await playBreakAlert();
-    if (!audioPlayed) {
-      speakUz("Qisqa tanaffus qiling");
-    }
-  };
 
   useEffect(() => {
     let mounted = true;
@@ -94,7 +86,6 @@ export default function FocusTimer() {
       setBreakModalOpen(true);
       setBreakConfirmed(false);
       setBreakCheckpoint(currentCheckpoint);
-      triggerBreakReminder();
     }
   }, [totalSeconds, running, breakModalOpen, breakCheckpoint]);
 
